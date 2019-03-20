@@ -47,6 +47,8 @@ impl<P: Rom, X: Ram> Mcu<P, X> {
         }
     }
 
+    /* Registers */
+
     pub fn a(&self) -> u8 {
         self.ram.load(0xE0)
     }
@@ -64,10 +66,42 @@ impl<P: Rom, X: Ram> Mcu<P, X> {
         self.ram.store(0x83, (value >> 8) as u8);
     }
 
+    pub fn sp(&self) -> u8 {
+        self.ram.load(0x81)
+    }
+
+    pub fn set_sp(&mut self, value: u8) {
+        self.ram.store(0x81, value)
+    }
+
+    /* Memory operations */
+
+    pub fn pop_sp(&mut self) -> u8 {
+        let sp = self.sp();
+        let value = self.ram.load(sp as u16);
+        self.set_sp(sp - 1);
+        value
+    }
+
+    pub fn push_sp(&mut self, value: u8) {
+        let sp = self.sp() + 1;
+        self.set_sp(sp);
+        self.ram.store(sp as u16, value);
+    }
+
     pub fn load_pc(&mut self) -> u8 {
         let value = self.rom.load(self.pc);
         self.pc += 1;
         value
+    }
+
+    /* Processor operations */
+
+    pub fn reset(&mut self) {
+        self.pc = 0;
+        self.set_a(0);
+        self.set_dptr(0);
+        self.set_sp(7);
     }
 
     pub fn step(&mut self) {
@@ -80,6 +114,19 @@ impl<P: Rom, X: Ram> Mcu<P, X> {
                 let value = (self.load_pc() as u16) << 8 | (self.load_pc() as u16);
                 println!("  ljmp {:#X}", value);
                 self.pc = value;
+            },
+            // lcall code addr
+            0x12 => {
+                let value = (self.load_pc() as u16) << 8 | (self.load_pc() as u16);
+                println!("  lcall {:#X}", value);
+                self.push_sp(self.pc as u8);
+                self.push_sp((self.pc >> 8) as u8);
+                self.pc = value;
+            },
+            // ret
+            0x22 => {
+                println!("  ret");
+                self.pc = (self.pop_sp() as u16) << 8 | (self.pop_sp() as u16);
             },
             // mov dptr, #data16
             0x90 => {

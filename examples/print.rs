@@ -7,6 +7,8 @@ fn main() {
 
     let mut mcu = Mcu::new(0, rom, ram);
 
+    mcu.reset();
+
     loop {
         mcu.step();
 

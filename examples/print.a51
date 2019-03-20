@@ -1,6 +1,10 @@
 .org 00H
 
 start:
+    lcall print
+    ljmp shutdown
+
+print:
     mov dptr, #0x400
     mov a, #'H'
     movx @dptr, a
@@ -12,7 +16,7 @@ start:
     movx @dptr, a
     mov a, #'o'
     movx @dptr, a
-    ljmp shutdown
+    ret
 
 shutdown:
     mov dptr, #0xFFFF
