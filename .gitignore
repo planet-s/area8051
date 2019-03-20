@@ -1,3 +1,4 @@
 *.rom
+/examples/sdcc
 /target
 **/*.rs.bk
