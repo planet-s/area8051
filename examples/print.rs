@@ -17,10 +17,12 @@ fn main() {
         mcu.step();
 
         // Serial bus
+        let s = mcu.iram.load(0x98);
         let b = mcu.iram.load(0x99);
         if b > 0 {
             println!("{}", b as char);
-            mcu.xram.store(0x99, 0);
+            mcu.iram.store(0x98, s | (1 << 1));
+            mcu.iram.store(0x99, 0);
         }
 
         // Shutdown signal at 0xFFFF
