@@ -12,7 +12,7 @@ impl<T: AsRef<[u8]>> Rom for T {
         //TODO: Figure out behavior on out of bounds access
         match self.as_ref().get(address as usize) {
             Some(some) => *some,
-            None => panic!("Invalid load address: {:#04X}", address),
+            None => panic!("Invalid load address: {:#X}", address),
         }
     }
 }
@@ -23,7 +23,7 @@ impl<T: Rom + AsMut<[u8]>> Ram for T {
         //TODO: Figure out behavior on out of bounds access
         match self.as_mut().get_mut(address as usize) {
             Some(some) => *some = value,
-            None => panic!("Invalid store address: {:#04X}", address),
+            None => panic!("Invalid store address: {:#X}", address),
         }
     }
 }
@@ -75,22 +75,28 @@ impl<P: Rom, X: Ram> Mcu<P, X> {
         match op {
             // nop
             0x00 => (),
+            // ljmp code addr
+            0x02 => {
+                let value = (self.load_pc() as u16) << 8 | (self.load_pc() as u16);
+                println!("  ljmp {:#X}", value);
+                self.pc = value;
+            },
             // mov dptr, #data16
             0x90 => {
                 let value = (self.load_pc() as u16) << 8 | (self.load_pc() as u16);
-                println!("  mov dptr, {:#02X}", value);
+                println!("  mov dptr, {:#X}", value);
                 self.set_dptr(value);
             },
             // mov a, #data
             0x74 => {
                 let value = self.load_pc();
-                println!("  mov a, #{:#02X}", value);
+                println!("  mov a, #{:#X}", value);
                 self.set_a(value);
             },
             // mov a, iram addr
             0xE5 => {
                 let address = self.load_pc();
-                println!("  mov a, {:#02X}", address);
+                println!("  mov a, {:#X}", address);
                 let value = self.ram.load(address as u16);
                 self.set_a(value);
             },
@@ -101,7 +107,7 @@ impl<P: Rom, X: Ram> Mcu<P, X> {
                 let value = self.a();
                 self.ram.store(address, value);
             },
-            _ => panic!("Unknown opcode: {:#02X}", op),
+            _ => panic!("Unknown opcode: {:#X}", op),
         }
     }
 }
