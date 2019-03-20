@@ -16,11 +16,11 @@ fn main() {
     loop {
         mcu.step();
 
-        // We have a theoretical data bus at 0x400
-        let b = mcu.xram.load(0x400);
+        // Serial bus
+        let b = mcu.iram.load(0x99);
         if b > 0 {
             println!("{}", b as char);
-            mcu.xram.store(0x400, 0);
+            mcu.xram.store(0x99, 0);
         }
 
         // Shutdown signal at 0xFFFF

@@ -1,6 +1,4 @@
-void putchar(char c) {
-    *((char *)0x400) = c;
-}
+#include <serial_IO.h>
 
 void puts(const char * s) {
     char c;

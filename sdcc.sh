@@ -8,8 +8,9 @@ mkdir -p examples/sdcc
 pushd examples/sdcc > /dev/null
 sdcc \
     -mmcs51 \
+    --no-xinit-opt \
     ../sdcc.c
-objcopy -I ihex -O binary sdcc.ihx sdcc.bin
+makebin -p sdcc.ihx sdcc.bin
 d52 -t sdcc.bin
 expand sdcc.d52 > sdcc.d52.expanded
 mv sdcc.d52.expanded sdcc.d52
