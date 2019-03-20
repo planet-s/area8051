@@ -7,23 +7,23 @@ pub trait Ram: Rom {
 }
 
 // Blanket implementation for anything that converts to a u8 slice
-impl<T> Rom for T where T: AsRef<[u8]> {
+impl<T: AsRef<[u8]>> Rom for T {
     fn load(&self, address: u16) -> u8 {
         //TODO: Figure out behavior on out of bounds access
         match self.as_ref().get(address as usize) {
             Some(some) => *some,
-            None => panic!("Invalid load address: {:#>04x}", address),
+            None => panic!("Invalid load address: {:#04X}", address),
         }
     }
 }
 
 // Blanket implementation for anything that converts to a mutable u8 slice
-impl<T> Ram for T where T: Rom + AsMut<[u8]> {
+impl<T: Rom + AsMut<[u8]>> Ram for T {
     fn store(&mut self, address: u16, value: u8) {
         //TODO: Figure out behavior on out of bounds access
         match self.as_mut().get_mut(address as usize) {
             Some(some) => *some = value,
-            None => panic!("Invalid store address: {:#>04x}", address),
+            None => panic!("Invalid store address: {:#04X}", address),
         }
     }
 }
@@ -47,18 +47,61 @@ impl<P: Rom, X: Ram> Mcu<P, X> {
         }
     }
 
-    pub fn pc_load(&mut self) -> u8 {
+    pub fn a(&self) -> u8 {
+        self.ram.load(0xE0)
+    }
+
+    pub fn set_a(&mut self, value: u8) {
+        self.ram.store(0xE0, value);
+    }
+
+    pub fn dptr(&self) -> u16 {
+        self.ram.load(0x82) as u16 | (self.ram.load(0x83) as u16) << 8
+    }
+
+    pub fn set_dptr(&mut self, value: u16) {
+        self.ram.store(0x82, value as u8);
+        self.ram.store(0x83, (value >> 8) as u8);
+    }
+
+    pub fn load_pc(&mut self) -> u8 {
         let value = self.rom.load(self.pc);
         self.pc += 1;
         value
     }
 
     pub fn step(&mut self) {
-        let op = self.pc_load();
-        println!("Opcode: {:#>02x}", op);
+        let op = self.load_pc();
         match op {
-            0 => (),
-            _ => panic!("Unknown opcode: {:#>02x}", op),
+            // nop
+            0x00 => (),
+            // mov dptr, #data16
+            0x90 => {
+                let value = (self.load_pc() as u16) << 8 | (self.load_pc() as u16);
+                println!("  mov dptr, {:#02X}", value);
+                self.set_dptr(value);
+            },
+            // mov a, #data
+            0x74 => {
+                let value = self.load_pc();
+                println!("  mov a, #{:#02X}", value);
+                self.set_a(value);
+            },
+            // mov a, iram addr
+            0xE5 => {
+                let address = self.load_pc();
+                println!("  mov a, {:#02X}", address);
+                let value = self.ram.load(address as u16);
+                self.set_a(value);
+            },
+            // movx @dptr, a
+            0xF0 => {
+                println!("  movx @dptr, a");
+                let address = self.dptr();
+                let value = self.a();
+                self.ram.store(address, value);
+            },
+            _ => panic!("Unknown opcode: {:#02X}", op),
         }
     }
 }

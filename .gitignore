@@ -1,2 +1,3 @@
+*.rom
 /target
 **/*.rs.bk
