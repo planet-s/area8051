@@ -3,7 +3,7 @@ use std::{env, fs};
 
 fn main() {
     let file = env::args().nth(1).expect("rom file not provided");
-    let mut pmem = fs::read(file).expect("failed to read rom file");
+    let pmem = fs::read(file).expect("failed to read rom file");
     let iram = vec![0; 256];
     let xram = vec![0; 65536];
 

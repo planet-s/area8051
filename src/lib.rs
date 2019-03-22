@@ -119,6 +119,22 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
         self.iram.store(self.dps_addr(), value);
     }
 
+    /* Ports */
+    pub fn p_addr(&self, index: u8) -> u16 {
+        if index >= 4 {
+            panic!("Invalid port p{}", index);
+        }
+        (0x80 + index * 0x10) as u16
+    }
+
+    pub fn p(&self, index: u8) -> u8 {
+        self.iram.load(self.p_addr(index))
+    }
+
+    pub fn set_p(&mut self, index: u8, value: u8) {
+        self.iram.store(self.p_addr(index), value);
+    }
+
     /* Program status word */
     pub fn psw_addr(&self) -> u16 {
         0xD0
@@ -228,7 +244,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
     }
 
     pub fn reljmp(&mut self, offset: u8) {
-        self.pc = self.pc.wrapping_add((((offset as i8) as i16) as u16));
+        self.pc = self.pc.wrapping_add(((offset as i8) as i16) as u16);
     }
 
     /* Processor operations */
@@ -709,8 +725,8 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             0xE2 ... 0xE3 => {
                 let r = op - 0xE2;
                 debug!("movx a, @r{}", r);
-                let address = self.r(r);
-                let value = self.xram.load(address as u16);
+                let address = (self.p(2) as u16) << 8 | (self.r(r) as u16);
+                let value = self.xram.load(address);
                 self.set_a(value);
             },
 
@@ -740,7 +756,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             0xF2 ... 0xF3 => {
                 let r = op - 0xF2;
                 debug!("movx @r{}, a",r );
-                let address = self.r(r);
+                let address = (self.p(2) as u16) << 8 | (self.r(r) as u16);
                 let value = self.a();
                 self.xram.store(address as u16, value);
             },
