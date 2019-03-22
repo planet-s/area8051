@@ -78,8 +78,11 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
     /* Data pointer */
     pub fn dptr_addr(&self) -> u16 {
-        //TODO: dptr1 support
-        0x82
+        if self.dps() & 1 == 0 {
+            0x82
+        } else {
+            0x84
+        }
     }
 
     pub fn dptr(&self) -> u16 {
@@ -94,7 +97,6 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
         self.iram.store(addr + 1, (value >> 8) as u8);
     }
 
-    /* Data pointer select */
     pub fn dps_addr(&self) -> u16 {
         0x86
     }
