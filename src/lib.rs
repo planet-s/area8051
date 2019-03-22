@@ -1,3 +1,13 @@
+#[cfg(feature = "debug")]
+macro_rules! debug {
+    ($($arg:tt)*) => (eprint!($($arg)*));
+}
+
+#[cfg(not(feature = "debug"))]
+macro_rules! debug {
+    ($($arg:tt)*) => ();
+}
+
 pub trait Rom {
     fn load(&self, address: u16) -> u8;
 }
@@ -256,22 +266,22 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
         let operand = op & 0xF;
         match operand {
             0x4 => {
-                eprint!(" a");
+                debug!(" a");
                 self.a_addr()
             },
             0x5 => {
                 let value = self.load_pc() as u16;
-                eprint!(" 0x{:02X}", value);
+                debug!(" 0x{:02X}", value);
                 value
             },
             0x6 ... 0x7 => {
                 let r = operand - 0x6;
-                eprint!(" @r{}", r);
+                debug!(" @r{}", r);
                 self.r(r) as u16
             },
             0x8 ... 0xF => {
                 let r = operand - 0x8;
-                eprint!(" r{}", r);
+                debug!(" r{}", r);
                 self.r_addr(r)
             },
             _ => panic!("Irregular operand: {:#X}", operand),
@@ -279,25 +289,25 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
     }
 
     pub fn step(&mut self) {
-        eprint!("  0x{:04X}: ", self.pc);
+        debug!("  0x{:04X}: ", self.pc);
 
         let op = self.load_pc();
         match op {
             /* nop */
             0x00 => {
-                eprint!("nop");
+                debug!("nop");
             },
 
             /* ljmp address */
             0x02 => {
                 let address = (self.load_pc() as u16) << 8 | (self.load_pc() as u16);
-                eprint!("ljmp 0x{:04X}", address);
+                debug!("ljmp 0x{:04X}", address);
                 self.pc = address;
             },
 
             /* inc operand */
             0x04 ... 0x0F => {
-                eprint!("inc");
+                debug!("inc");
                 let operand = self.operand(op);
                 let value = self.iram.load(operand);
                 self.iram.store(operand, value.wrapping_add(1));
@@ -307,7 +317,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             0x10 => {
                 let bit = self.load_pc();
                 let offset = self.load_pc();
-                eprint!("jbs 0x{:02X}, 0x{:02X}", bit, offset);
+                debug!("jbs 0x{:02X}, 0x{:02X}", bit, offset);
                 let (address, mask) = self.bit(bit);
                 let value = self.iram.load(address as u16);
                 if value & mask != 0 {
@@ -319,7 +329,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* lcall address */
             0x12 => {
                 let address = (self.load_pc() as u16) << 8 | (self.load_pc() as u16);
-                eprint!("lcall 0x{:04X}", address);
+                debug!("lcall 0x{:04X}", address);
                 self.push_sp(self.pc as u8);
                 self.push_sp((self.pc >> 8) as u8);
                 self.pc = address;
@@ -327,7 +337,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* dec operand */
             0x14 ... 0x1F => {
-                eprint!("dec");
+                debug!("dec");
                 let operand = self.operand(op);
                 let value = self.iram.load(operand);
                 self.iram.store(operand, value.wrapping_sub(1));
@@ -337,7 +347,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             0x20 => {
                 let bit = self.load_pc();
                 let offset = self.load_pc();
-                eprint!("jb 0x{:02X}, 0x{:02X}", bit, offset);
+                debug!("jb 0x{:02X}, 0x{:02X}", bit, offset);
                 let (address, mask) = self.bit(bit);
                 let value = self.iram.load(address as u16);
                 if value & mask != 0 {
@@ -347,16 +357,16 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* ret */
             0x22 => {
-                eprint!("ret");
+                debug!("ret");
                 self.pc = (self.pop_sp() as u16) << 8 | (self.pop_sp() as u16);
             },
 
             /* add a, operand */
             0x24 ... 0x2F => {
-                eprint!("add a,");
+                debug!("add a,");
                 let value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
-                    eprint!(" #0x{:02X}", value);
+                    debug!(" #0x{:02X}", value);
                     value
                 } else {
                     let operand = self.operand(op);
@@ -380,7 +390,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             0x30 => {
                 let bit = self.load_pc();
                 let offset = self.load_pc();
-                eprint!("jnb 0x{:02X}, 0x{:02X}", bit, offset);
+                debug!("jnb 0x{:02X}, 0x{:02X}", bit, offset);
                 let (address, mask) = self.bit(bit);
                 let value = self.iram.load(address as u16);
                 if value & mask == 0 {
@@ -390,10 +400,10 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* addc a, operand */
             0x34 ... 0x3F => {
-                eprint!("addc a,");
+                debug!("addc a,");
                 let value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
-                    eprint!(" #0x{:02X}", value);
+                    debug!(" #0x{:02X}", value);
                     value
                 } else {
                     let operand = self.operand(op);
@@ -416,7 +426,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* jc offset */
             0x40 => {
                 let offset = self.load_pc();
-                eprint!("jc 0x{:02X}", offset);
+                debug!("jc 0x{:02X}", offset);
                 if self.c() {
                     self.reljmp(offset);
                 }
@@ -426,7 +436,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             0x43 => {
                 let address = self.load_pc();
                 let value = self.load_pc();
-                eprint!("orl 0x{:02X}, #0x{:02X}", address, value);
+                debug!("orl 0x{:02X}, #0x{:02X}", address, value);
 
                 let iram = self.iram.load(address as u16);
                 self.iram.store(address as u16, iram | value);
@@ -434,10 +444,10 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* orl a, operand */
             0x44 ... 0x4F => {
-                eprint!("orl a,");
+                debug!("orl a,");
                 let value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
-                    eprint!(" #0x{:02X}", value);
+                    debug!(" #0x{:02X}", value);
                     value
                 } else {
                     let operand = self.operand(op);
@@ -451,7 +461,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* jnc offset */
             0x50 => {
                 let offset = self.load_pc();
-                eprint!("jnc 0x{:02X}", offset);
+                debug!("jnc 0x{:02X}", offset);
                 if ! self.c() {
                     self.reljmp(offset);
                 }
@@ -461,7 +471,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             0x53 => {
                 let address = self.load_pc();
                 let value = self.load_pc();
-                eprint!("anl 0x{:02X}, #0x{:02X}", address, value);
+                debug!("anl 0x{:02X}, #0x{:02X}", address, value);
 
                 let iram = self.iram.load(address as u16);
                 self.iram.store(address as u16, iram & value);
@@ -469,10 +479,10 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* anl a, operand */
             0x54 ... 0x5F => {
-                eprint!("anl a,");
+                debug!("anl a,");
                 let value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
-                    eprint!(" #0x{:02X}", value);
+                    debug!(" #0x{:02X}", value);
                     value
                 } else {
                     let operand = self.operand(op);
@@ -486,7 +496,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* jz offset */
             0x60 => {
                 let offset = self.load_pc();
-                eprint!("jz 0x{:02X}", offset);
+                debug!("jz 0x{:02X}", offset);
                 if self.a() == 0 {
                     self.reljmp(offset);
                 }
@@ -494,10 +504,10 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* xrl a, operand */
             0x64 ... 0x6F => {
-                eprint!("xrl a,");
+                debug!("xrl a,");
                 let value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
-                    eprint!(" #0x{:02X}", value);
+                    debug!(" #0x{:02X}", value);
                     value
                 } else {
                     let operand = self.operand(op);
@@ -511,7 +521,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* jnz offset */
             0x70 => {
                 let offset = self.load_pc();
-                eprint!("jnz 0x{:02X}", offset);
+                debug!("jnz 0x{:02X}", offset);
                 if self.a() != 0 {
                     self.reljmp(offset);
                 }
@@ -519,17 +529,17 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* mov operand, #data */
             0x74 ... 0x7F => {
-                eprint!("mov");
+                debug!("mov");
                 let operand = self.operand(op);
                 let value = self.load_pc();
-                eprint!(", #0x{:02X}", value);
+                debug!(", #0x{:02X}", value);
                 self.iram.store(operand, value);
             },
 
             /* sjmp offset */
             0x80 => {
                 let offset = self.load_pc();
-                eprint!("sjmp 0x{:02X}", offset);
+                debug!("sjmp 0x{:02X}", offset);
                 self.reljmp(offset);
             },
 
@@ -537,7 +547,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             0x85 => {
                 let src = self.load_pc();
                 let dest = self.load_pc();
-                eprint!("mov 0x{:02X}, 0x{:02X}", dest, src);
+                debug!("mov 0x{:02X}, 0x{:02X}", dest, src);
                 let value = self.iram.load(src as u16);
                 self.iram.store(dest as u16, value);
             },
@@ -545,7 +555,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* mov address, operand */
             0x86 ... 0x8F => {
                 let address = self.load_pc();
-                eprint!("mov 0x{:02X},", address);
+                debug!("mov 0x{:02X},", address);
                 let operand = self.operand(op);
                 let value = self.iram.load(operand);
                 self.iram.store(address as u16, value);
@@ -554,13 +564,13 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* mov dptr, address */
             0x90 => {
                 let address = (self.load_pc() as u16) << 8 | (self.load_pc() as u16);
-                eprint!("mov dptr, 0x{:04X}", address);
+                debug!("mov dptr, 0x{:04X}", address);
                 self.set_dptr(address);
             },
 
             /* movc a, @a+dptr */
             0x93 => {
-                eprint!("movc a, @a+dptr");
+                debug!("movc a, @a+dptr");
                 let address = self.dptr().wrapping_add(self.a() as u16);
                 let value = self.pmem.load(address);
                 self.set_a(value);
@@ -568,10 +578,10 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* sub a, operand */
             0x94 ... 0x9F => {
-                eprint!("subb a,");
+                debug!("subb a,");
                 let value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
-                    eprint!(" #0x{:02X}", value);
+                    debug!(" #0x{:02X}", value);
                     value
                 } else {
                     let operand = self.operand(op);
@@ -593,41 +603,41 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* inc dptr */
             0xA3 => {
-                eprint!("inc dptr");
+                debug!("inc dptr");
                 let value = self.dptr();
                 self.set_dptr(value.wrapping_add(1));
             },
 
             /* mov operand, address */
             0xA6 ... 0xAF => {
-                eprint!("mov");
+                debug!("mov");
                 let operand = self.operand(op);
                 let address = self.load_pc();
-                eprint!(", 0x{:02X}", address);
+                debug!(", 0x{:02X}", address);
                 let value = self.iram.load(address as u16);
                 self.iram.store(operand, value);
             },
 
             /* cjne operand, #data, offset */
             0xB4 ... 0xBF => {
-                eprint!("cjne");
+                debug!("cjne");
                 let (a, b) = if (op & 0xF) == 4 {
                     let value = self.load_pc();
-                    eprint!(" a, #0x{:02X},", value);
+                    debug!(" a, #0x{:02X},", value);
                     (self.a(), value)
                 } else if (op & 0xF) == 5 {
                     let address = self.load_pc();
-                    eprint!(" a, 0x{:02X},", address);
+                    debug!(" a, 0x{:02X},", address);
                     (self.a(), self.iram.load(address as u16))
                 } else {
                     let operand = self.operand(op);
                     let value = self.load_pc();
-                    eprint!(", #0x{:02X},", value);
+                    debug!(", #0x{:02X},", value);
                     (self.iram.load(operand), value)
                 };
 
                 let offset = self.load_pc();
-                eprint!(" 0x{:02X}", offset);
+                debug!(" 0x{:02X}", offset);
                 self.set_c(a < b);
                 if a != b {
                     self.reljmp(offset);
@@ -637,7 +647,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* push address */
             0xC0 => {
                 let address = self.load_pc();
-                eprint!("push 0x{:02X}", address);
+                debug!("push 0x{:02X}", address);
                 let value = self.iram.load(address as u16);
                 self.push_sp(value);
             },
@@ -645,7 +655,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* clr bit */
             0xC2 => {
                 let bit = self.load_pc();
-                eprint!("clr 0x{:02X}", bit);
+                debug!("clr 0x{:02X}", bit);
                 let (address, mask) = self.bit(bit);
                 let value = self.iram.load(address as u16);
                 self.iram.store(address as u16, value & !mask);
@@ -653,14 +663,14 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* clr c */
             0xC3 => {
-                eprint!("clr c");
+                debug!("clr c");
                 self.set_c(false);
             },
 
             /* pop address */
             0xD0 => {
                 let address = self.load_pc();
-                eprint!("pop 0x{:02X}", address);
+                debug!("pop 0x{:02X}", address);
                 let value = self.pop_sp();
                 self.iram.store(address as u16, value);
             },
@@ -668,7 +678,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* setb bit */
             0xD2 => {
                 let bit = self.load_pc();
-                eprint!("setb 0x{:02X}", bit);
+                debug!("setb 0x{:02X}", bit);
                 let (address, mask) = self.bit(bit);
                 let value = self.iram.load(address as u16);
                 self.iram.store(address as u16, value | mask);
@@ -676,10 +686,10 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* djnz operand, offset */
             0xD5 | 0xD8 ... 0xDF => {
-                eprint!("djnz");
+                debug!("djnz");
                 let operand = self.operand(op);
                 let offset = self.load_pc();
-                eprint!(", 0x{:02X}", offset);
+                debug!(", 0x{:02X}", offset);
                 let value = self.iram.load(operand).wrapping_sub(1);
                 self.iram.store(operand, value);
                 if operand != 0 {
@@ -689,7 +699,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* movx @dptr, a */
             0xE0 => {
-                eprint!("movx a, @dptr");
+                debug!("movx a, @dptr");
                 let address = self.dptr();
                 let value = self.xram.load(address);
                 self.set_a(value);
@@ -698,7 +708,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* movx @dptr, a */
             0xE2 ... 0xE3 => {
                 let r = op - 0xE2;
-                eprint!("movx a, @r{}", r);
+                debug!("movx a, @r{}", r);
                 let address = self.r(r);
                 let value = self.xram.load(address as u16);
                 self.set_a(value);
@@ -706,13 +716,13 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* clr a */
             0xE4 => {
-                eprint!("clr a");
+                debug!("clr a");
                 self.set_a(0);
             }
 
             /* mov a, operand */
             0xE5 ... 0xEF => {
-                eprint!("mov a,");
+                debug!("mov a,");
                 let operand = self.operand(op);
                 let value = self.iram.load(operand);
                 self.set_a(value);
@@ -720,7 +730,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* movx @dptr, a */
             0xF0 => {
-                eprint!("movx @dptr, a");
+                debug!("movx @dptr, a");
                 let address = self.dptr();
                 let value = self.a();
                 self.xram.store(address, value);
@@ -729,7 +739,7 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             /* movx @r0, a */
             0xF2 ... 0xF3 => {
                 let r = op - 0xF2;
-                eprint!("movx @r{}, a",r );
+                debug!("movx @r{}, a",r );
                 let address = self.r(r);
                 let value = self.a();
                 self.xram.store(address as u16, value);
@@ -737,9 +747,9 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
 
             /* mov operand, a */
             0xF5 ... 0xFF => {
-                eprint!("mov");
+                debug!("mov");
                 let operand = self.operand(op);
-                eprint!(", a");
+                debug!(", a");
                 let value = self.a();
                 self.iram.store(operand, value);
             },
@@ -748,6 +758,6 @@ impl<P: Rom, I: Ram, X: Ram> Mcu<P, I, X> {
             _ => panic!("Unknown opcode: 0x{:02X}", op),
         }
 
-        eprintln!();
+        debug!("\n");
     }
 }

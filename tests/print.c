@@ -11,7 +11,7 @@ void shutdown() {
     *((char *)0xFFFF) = 1;
 }
 
-const char * static_string = "A Test\n";
+const char * static_string = "Hello\n";
 
 void main() {
     puts(static_string);

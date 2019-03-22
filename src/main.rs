@@ -1,13 +1,11 @@
 use area8051::{Mcu, Rom, Ram};
-use std::fs;
+use std::{env, fs};
 
 fn main() {
-    let mut pmem = fs::read("examples/print.rom").expect("failed to read print.rom");
+    let file = env::args().nth(1).expect("rom file not provided");
+    let mut pmem = fs::read(file).expect("failed to read rom file");
     let iram = vec![0; 256];
-    let mut xram = pmem.clone();
-    while xram.len() < 65536 {
-        xram.push(0);
-    }
+    let xram = vec![0; 65536];
 
     let mut mcu = Mcu::new(0, pmem, iram, xram);
 
@@ -20,7 +18,7 @@ fn main() {
         let s = mcu.iram.load(0x98);
         let b = mcu.iram.load(0x99);
         if b > 0 {
-            println!("{}", b as char);
+            print!("{}", b as char);
             mcu.iram.store(0x98, s | (1 << 1));
             mcu.iram.store(0x99, 0);
         }
