@@ -5,13 +5,12 @@ start:
     ljmp shutdown
 
 print:
-    mov r0, #0x99
-    mov @r0, #'H'
-    mov @r0, #'e'
-    mov @r0, #'l'
-    mov @r0, #'l'
-    mov @r0, #'o'
-    mov @r0, #'\n'
+    mov 0x99, #'H'
+    mov 0x99, #'e'
+    mov 0x99, #'l'
+    mov 0x99, #'l'
+    mov 0x99, #'o'
+    mov 0x99, #'\n'
     ret
 
 shutdown:
