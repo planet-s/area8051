@@ -345,6 +345,16 @@ pub trait Isa: Mem + Reg {
                 }
             },
 
+            /* jmp @a+dptr */
+            0x73 => {
+                debug!("jmp @a+dptr");
+                let address = (
+                    (self.load(self.dptr(false)) as u16) |
+                    (self.load(self.dptr(true)) as u16) << 8
+                ).wrapping_add(self.load(self.a()) as u16);
+                self.set_pc(address);
+            },
+
             /* mov operand, #data */
             0x74 ... 0x7F => {
                 debug!("mov");
