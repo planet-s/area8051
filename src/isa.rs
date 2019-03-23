@@ -196,7 +196,7 @@ pub trait Isa: Mem + Reg {
                 let overflow =  signed > 127 || signed < -128;
                 self.update_psw(carry, aux_carry, overflow);
 
-                self.store(self.a(), (a - value) as u8);
+                self.store(self.a(), (a + value) as u8);
             },
 
             /* jnb bit, offset */
@@ -238,7 +238,7 @@ pub trait Isa: Mem + Reg {
                 let overflow = signed > 127 || signed < -128;
                 self.update_psw(carry, aux_carry, overflow);
 
-                self.store(self.a(), (a - value) as u8);
+                self.store(self.a(), (a + value) as u8);
             },
 
             /* jc offset */
