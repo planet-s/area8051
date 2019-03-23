@@ -211,6 +211,23 @@ pub trait Isa: Mem + Reg {
                 }
             },
 
+            /* rlc a */
+            0x33 => {
+                debug!("rlc a");
+                let value = self.load(self.a());
+                let psw = self.load(self.psw());
+                if value & (1 << 7) == 0 {
+                    self.store(self.psw(), psw & !(1 << 7));
+                } else {
+                    self.store(self.psw(), psw | (1 << 7));
+                }
+                if psw & (1 << 7) == 0 {
+                    self.store(self.a(), value << 1);
+                } else {
+                    self.store(self.a(), (value << 1) | 1);
+                }
+            },
+
             /* addc a, operand */
             0x34 ... 0x3F => {
                 debug!("addc a,");
