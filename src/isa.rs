@@ -144,7 +144,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* rrc a */
-            0x33 => {
+            0x13 => {
                 debug!("rrc a");
                 let value = self.load(self.a());
                 let psw = self.load(self.psw());
