@@ -585,6 +585,17 @@ pub trait Isa: Mem + Reg {
                 self.store(self.psw(), psw & !(1 << 7));
             },
 
+            /* swap a */
+            0xC4 => {
+                debug!("swap a");
+                let value = self.load(self.a());
+                self.store(
+                    self.a(),
+                    (value >> 4) |
+                    (value & 0xF) << 4
+                );
+            },
+
             /* xch a, operand */
             0xC5 ... 0xCF => {
                 debug!("xch a,");
