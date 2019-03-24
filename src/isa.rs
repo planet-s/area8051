@@ -267,6 +267,16 @@ pub trait Isa: Mem + Reg {
                 }
             },
 
+            /* orl address, a */
+            0x42 => {
+                let address = self.load_pc();
+                debug!("orl 0x{:02X}, a", address);
+
+                let value = self.load(self.a());
+                let reg = self.load(Addr::Reg(address));
+                self.store(Addr::Reg(address), reg | value);
+            },
+
             /* orl address, #data */
             0x43 => {
                 let address = self.load_pc();
@@ -275,7 +285,7 @@ pub trait Isa: Mem + Reg {
 
                 let reg = self.load(Addr::Reg(address));
                 self.store(Addr::Reg(address), reg | value);
-            }
+            },
 
             /* orl a, operand */
             0x44 ... 0x4F => {
@@ -414,6 +424,19 @@ pub trait Isa: Mem + Reg {
                 self.store(self.dptr(true), (value >> 8) as u8);
             },
 
+            /* mov bit, C */
+            0x92 => {
+                let bit = self.load_pc();
+                debug!("mov 0x{:02X}, c", bit);
+                let (address, mask) = self.bit(bit);
+                let value = self.load(address);
+                if self.load(self.psw()) & (1 << 7) == 0 {
+                    self.store(address, value & !mask);
+                } else {
+                    self.store(address, value | mask);
+                }
+            },
+
             /* movc a, @a+dptr */
             0x93 => {
                 debug!("movc a, @a+dptr");
@@ -519,7 +542,7 @@ pub trait Isa: Mem + Reg {
                 if a != b {
                     self.reljmp(offset as i8);
                 }
-            }
+            },
 
             /* push address */
             0xC0 => {
@@ -543,6 +566,16 @@ pub trait Isa: Mem + Reg {
                 debug!("clr c");
                 let psw = self.load(self.psw());
                 self.store(self.psw(), psw & !(1 << 7));
+            },
+
+            /* xch a, operand */
+            0xC5 ... 0xCF => {
+                debug!("xch a,");
+                let operand = self.operand(op);
+                let a = self.load(self.a());
+                let value = self.load(operand);
+                self.store(self.a(), value);
+                self.store(operand, a);
             },
 
             /* pop address */
