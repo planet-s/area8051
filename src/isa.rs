@@ -692,6 +692,13 @@ pub trait Isa: Mem + Reg {
                 self.store(address, value);
             },
 
+            /* cpl a */
+            0xF4 => {
+                debug!("cpl a");
+                let value = self.load(self.a());
+                self.store(self.a(), !value);
+            },
+
             /* mov operand, a */
             0xF5 ... 0xFF => {
                 debug!("mov");
