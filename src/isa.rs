@@ -466,6 +466,19 @@ pub trait Isa: Mem + Reg {
                 self.store(self.dptr(true), (value >> 8) as u8);
             },
 
+            /* mul ab */
+            0xA4 => {
+                debug!("mul ab");
+                let a = self.load(self.a());
+                let b = self.load(self.b());
+
+                let value = (a as u16) * (b as u16);
+                self.update_psw(false, false, value > 255);
+
+                self.store(self.a(), value as u8);
+                self.store(self.b(), (value >> 8) as u8);
+            },
+
             /* mov operand, address */
             0xA6 ... 0xAF => {
                 debug!("mov");
