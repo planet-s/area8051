@@ -595,6 +595,13 @@ pub trait Isa: Mem + Reg {
                 self.store(address, value | mask);
             },
 
+            /* setb c */
+            0xD3 => {
+                debug!("setb c");
+                let value = self.load(self.psw());
+                self.store(self.psw(), value | (1 << 7));
+            },
+
             /* djnz operand, offset */
             0xD5 | 0xD8 ... 0xDF => {
                 debug!("djnz");
