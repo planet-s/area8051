@@ -143,6 +143,23 @@ pub trait Isa: Mem + Reg {
                 self.set_pc(address);
             },
 
+            /* rrc a */
+            0x33 => {
+                debug!("rrc a");
+                let value = self.load(self.a());
+                let psw = self.load(self.psw());
+                if value & 1 == 0 {
+                    self.store(self.psw(), psw & !(1 << 7));
+                } else {
+                    self.store(self.psw(), psw | (1 << 7));
+                }
+                if psw & (1 << 7) == 0 {
+                    self.store(self.a(), value >> 1);
+                } else {
+                    self.store(self.a(), (1 << 7) | (value >> 1));
+                }
+            },
+
             /* dec operand */
             0x14 ... 0x1F => {
                 debug!("dec");
