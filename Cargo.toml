@@ -5,5 +5,5 @@ authors = ["Jeremy Soller <jeremy@system76.com>"]
 edition = "2018"
 
 [features]
-default = ["debug"]
+default = []
 debug = []

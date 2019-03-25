@@ -329,6 +329,16 @@ pub trait Isa: Mem + Reg {
                 }
             },
 
+            /* anl address, a */
+            0x52 => {
+                let address = self.load_pc();
+                debug!("anl 0x{:02X}, a", address);
+
+                let value = self.load(self.a());
+                let reg = self.load(Addr::Reg(address));
+                self.store(Addr::Reg(address), reg & value);
+            },
+
             /* anl address, #data */
             0x53 => {
                 let address = self.load_pc();
