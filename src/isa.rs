@@ -75,12 +75,12 @@ pub trait Isa: Mem + Reg {
                 debug!(" 0x{:02X}", value);
                 Addr::Reg(value)
             },
-            0x6 ... 0x7 => {
+            0x6 ..= 0x7 => {
                 let r = operand - 0x6;
                 debug!(" @r{}", r);
                 Addr::IRam(self.load(self.r(r)))
             },
-            0x8 ... 0xF => {
+            0x8 ..= 0xF => {
                 let r = operand - 0x8;
                 debug!(" r{}", r);
                 self.r(r)
@@ -110,7 +110,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* inc operand */
-            0x04 ... 0x0F => {
+            0x04 ..= 0x0F => {
                 debug!("inc");
                 let operand = self.operand(op);
                 let value = self.load(operand);
@@ -161,7 +161,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* dec operand */
-            0x14 ... 0x1F => {
+            0x14 ..= 0x1F => {
                 debug!("dec");
                 let operand = self.operand(op);
                 let value = self.load(operand);
@@ -191,7 +191,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* add a, operand */
-            0x24 ... 0x2F => {
+            0x24 ..= 0x2F => {
                 debug!("add a,");
                 let value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
@@ -246,7 +246,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* addc a, operand */
-            0x34 ... 0x3F => {
+            0x34 ..= 0x3F => {
                 debug!("addc a,");
                 let mut value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
@@ -305,7 +305,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* orl a, operand */
-            0x44 ... 0x4F => {
+            0x44 ..= 0x4F => {
                 debug!("orl a,");
                 let value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
@@ -350,7 +350,7 @@ pub trait Isa: Mem + Reg {
             }
 
             /* anl a, operand */
-            0x54 ... 0x5F => {
+            0x54 ..= 0x5F => {
                 debug!("anl a,");
                 let value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
@@ -375,7 +375,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* xrl a, operand */
-            0x64 ... 0x6F => {
+            0x64 ..= 0x6F => {
                 debug!("xrl a,");
                 let value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
@@ -410,7 +410,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* mov operand, #data */
-            0x74 ... 0x7F => {
+            0x74 ..= 0x7F => {
                 debug!("mov");
                 let operand = self.operand(op);
                 let value = self.load_pc();
@@ -435,7 +435,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* mov address, operand */
-            0x86 ... 0x8F => {
+            0x86 ..= 0x8F => {
                 let address = self.load_pc();
                 debug!("mov 0x{:02X},", address);
                 let operand = self.operand(op);
@@ -476,7 +476,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* sub a, operand */
-            0x94 ... 0x9F => {
+            0x94 ..= 0x9F => {
                 debug!("subb a,");
                 let mut value = if (op & 0xF) == 4 {
                     let value = self.load_pc();
@@ -530,7 +530,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* mov operand, address */
-            0xA6 ... 0xAF => {
+            0xA6 ..= 0xAF => {
                 debug!("mov");
                 let operand = self.operand(op);
                 let address = self.load_pc();
@@ -540,7 +540,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* cjne operand, #data, offset */
-            0xB4 ... 0xBF => {
+            0xB4 ..= 0xBF => {
                 debug!("cjne");
                 let (a, b) = if (op & 0xF) == 4 {
                     let value = self.load_pc();
@@ -607,7 +607,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* xch a, operand */
-            0xC5 ... 0xCF => {
+            0xC5 ..= 0xCF => {
                 debug!("xch a,");
                 let operand = self.operand(op);
                 let a = self.load(self.a());
@@ -641,7 +641,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* djnz operand, offset */
-            0xD5 | 0xD8 ... 0xDF => {
+            0xD5 | 0xD8 ..= 0xDF => {
                 debug!("djnz");
                 let operand = self.operand(op);
                 let offset = self.load_pc();
@@ -665,7 +665,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* movx @dptr, a */
-            0xE2 ... 0xE3 => {
+            0xE2 ..= 0xE3 => {
                 let r = op - 0xE2;
                 debug!("movx a, @r{}", r);
                 let address = Addr::XRam(
@@ -683,7 +683,7 @@ pub trait Isa: Mem + Reg {
             }
 
             /* mov a, operand */
-            0xE5 ... 0xEF => {
+            0xE5 ..= 0xEF => {
                 debug!("mov a,");
                 let operand = self.operand(op);
                 let value = self.load(operand);
@@ -702,7 +702,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* movx @r0, a */
-            0xF2 ... 0xF3 => {
+            0xF2 ..= 0xF3 => {
                 let r = op - 0xF2;
                 debug!("movx @r{}, a",r );
                 let address = Addr::XRam(
@@ -721,7 +721,7 @@ pub trait Isa: Mem + Reg {
             },
 
             /* mov operand, a */
-            0xF5 ... 0xFF => {
+            0xF5 ..= 0xFF => {
                 debug!("mov");
                 let operand = self.operand(op);
                 debug!(", a");

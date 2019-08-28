@@ -12,8 +12,8 @@ pub trait Reg: Mem {
     fn bit(&self, bit: u8) -> (Addr, u8) {
         let byte = bit / 8;
         let addr = match byte {
-            0 ... 0xF => Addr::Reg(0x20 + byte),
-            0x10 ... 0x1F => Addr::Reg(byte * 8),
+            0 ..= 0xF => Addr::Reg(0x20 + byte),
+            0x10 ..= 0x1F => Addr::Reg(byte * 8),
             _ => panic!("Invalid bit 0x{:02X}", bit),
         };
         let mask = 1 << (bit % 8);
