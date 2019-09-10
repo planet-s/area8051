@@ -109,6 +109,17 @@ pub trait Isa: Mem + Reg {
                 self.set_pc(address);
             },
 
+            /* rr a */
+            0x03 => {
+                debug!("rr a");
+                let value = self.load(self.a());
+                if value & 1 == 0 {
+                    self.store(self.a(), value >> 1);
+                } else {
+                    self.store(self.a(), (1 << 7) | (value >> 1));
+                }
+            },
+
             /* inc operand */
             0x04 ..= 0x0F => {
                 debug!("inc");
@@ -188,6 +199,17 @@ pub trait Isa: Mem + Reg {
                     (self.pop_sp() as u16)
                 };
                 self.set_pc(pc);
+            },
+
+            /* rl a */
+            0x23 => {
+                debug!("rl a");
+                let value = self.load(self.a());
+                if value & (1 << 7) == 0 {
+                    self.store(self.a(), value << 1);
+                } else {
+                    self.store(self.a(), (value << 1) | 1);
+                }
             },
 
             /* add a, operand */
