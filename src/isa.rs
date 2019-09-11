@@ -112,20 +112,24 @@ pub trait Isa: Mem + Reg {
             /* rr a */
             0x03 => {
                 debug!("rr a");
-                let value = self.load(self.a());
-                if value & 1 == 0 {
-                    self.store(self.a(), value >> 1);
+                let old = self.load(self.a());
+                let new = if old & 1 == 0 {
+                    old >> 1
                 } else {
-                    self.store(self.a(), (1 << 7) | (value >> 1));
-                }
+                    (1 << 7) | (old >> 1)
+                };
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* inc operand */
             0x04 ..= 0x0F => {
                 debug!("inc");
                 let operand = self.operand(op);
-                let value = self.load(operand);
-                self.store(operand, value.wrapping_add(1));
+                let old = self.load(operand);
+                let new = old.wrapping_add(1);
+                self.store(operand, new);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* jbs bit, offset */
@@ -136,6 +140,7 @@ pub trait Isa: Mem + Reg {
                 let (address, mask) = self.bit(bit);
                 let value = self.load(address);
                 if value & mask != 0 {
+                    //TODO: value debug
                     self.store(address, value & !mask);
                     self.reljmp(offset as i8);
                 }
@@ -157,26 +162,30 @@ pub trait Isa: Mem + Reg {
             /* rrc a */
             0x13 => {
                 debug!("rrc a");
-                let value = self.load(self.a());
+                let old = self.load(self.a());
                 let psw = self.load(self.psw());
-                if value & 1 == 0 {
+                if old & 1 == 0 {
                     self.store(self.psw(), psw & !(1 << 7));
                 } else {
                     self.store(self.psw(), psw | (1 << 7));
                 }
-                if psw & (1 << 7) == 0 {
-                    self.store(self.a(), value >> 1);
+                let new = if psw & (1 << 7) == 0 {
+                    old >> 1
                 } else {
-                    self.store(self.a(), (1 << 7) | (value >> 1));
-                }
+                    (1 << 7) | (old >> 1)
+                };
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* dec operand */
             0x14 ..= 0x1F => {
                 debug!("dec");
                 let operand = self.operand(op);
-                let value = self.load(operand);
-                self.store(operand, value.wrapping_sub(1));
+                let old = self.load(operand);
+                let new = old.wrapping_sub(1);
+                self.store(operand, new);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* jb bit, offset */
@@ -187,6 +196,7 @@ pub trait Isa: Mem + Reg {
                 let (address, mask) = self.bit(bit);
                 let value = self.load(address);
                 if value & mask != 0 {
+                    //TODO: value debug
                     self.reljmp(offset as i8);
                 }
             },
@@ -204,12 +214,14 @@ pub trait Isa: Mem + Reg {
             /* rl a */
             0x23 => {
                 debug!("rl a");
-                let value = self.load(self.a());
-                if value & (1 << 7) == 0 {
-                    self.store(self.a(), value << 1);
+                let old = self.load(self.a());
+                let new = if old & (1 << 7) == 0 {
+                    old << 1
                 } else {
-                    self.store(self.a(), (value << 1) | 1);
-                }
+                    (old << 1) | 1
+                };
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* add a, operand */
@@ -224,18 +236,20 @@ pub trait Isa: Mem + Reg {
                     self.load(operand)
                 } as i16;
 
-                let a = self.load(self.a()) as i16;
+                let old = self.load(self.a()) as i16;
 
                 // Set carry if sum is greater than 0xFF
-                let carry = (value + a) > 0xFF;
+                let carry = (value + old) > 0xFF;
                 // Set auxiliary carry if low nibble sum is greater than 0xF
-                let aux_carry = ((value & 0xF) + (a & 0xF)) > 0xF;
+                let aux_carry = ((value & 0xF) + (old & 0xF)) > 0xF;
                 // Set overflow flag if signed result is not within range
-                let signed = (value as i8) as i16 + (a as i8) as i16;
+                let signed = (value as i8) as i16 + (old as i8) as i16;
                 let overflow =  signed > 127 || signed < -128;
                 self.update_psw(carry, aux_carry, overflow);
 
-                self.store(self.a(), (a + value) as u8);
+                let new = (old + value) as u8;
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} += 0x{:02X} => 0x{:02X}", old, value, new);
             },
 
             /* jnb bit, offset */
@@ -246,6 +260,7 @@ pub trait Isa: Mem + Reg {
                 let (address, mask) = self.bit(bit);
                 let value = self.load(address);
                 if value & mask == 0 {
+                    //TODO: value debug
                     self.reljmp(offset as i8);
                 }
             },
@@ -253,18 +268,20 @@ pub trait Isa: Mem + Reg {
             /* rlc a */
             0x33 => {
                 debug!("rlc a");
-                let value = self.load(self.a());
+                let old = self.load(self.a());
                 let psw = self.load(self.psw());
-                if value & (1 << 7) == 0 {
+                if old & (1 << 7) == 0 {
                     self.store(self.psw(), psw & !(1 << 7));
                 } else {
                     self.store(self.psw(), psw | (1 << 7));
                 }
-                if psw & (1 << 7) == 0 {
-                    self.store(self.a(), value << 1);
+                let new = if psw & (1 << 7) == 0 {
+                    old << 1
                 } else {
-                    self.store(self.a(), (value << 1) | 1);
-                }
+                    (old << 1) | 1
+                };
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* addc a, operand */
@@ -283,18 +300,20 @@ pub trait Isa: Mem + Reg {
                     value += 1;
                 }
 
-                let a = self.load(self.a()) as i16;
+                let old = self.load(self.a()) as i16;
 
                 // Set carry if sum is greater than 0xFF
-                let carry = (value + a) > 0xFF;
+                let carry = (value + old) > 0xFF;
                 // Set auxiliary carry if low nibble sum is greater than 0xF
-                let aux_carry = ((value & 0xF) + (a & 0xF)) > 0xF;
+                let aux_carry = ((value & 0xF) + (old & 0xF)) > 0xF;
                 // Set overflow flag if signed result is not within range
-                let signed = (value as i8) as i16 + (a as i8) as i16;
+                let signed = (value as i8) as i16 + (old as i8) as i16;
                 let overflow = signed > 127 || signed < -128;
                 self.update_psw(carry, aux_carry, overflow);
 
-                self.store(self.a(), (a + value) as u8);
+                let new = (old + value) as u8;
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} += 0x{:02X} => 0x{:02X}", old, value, new);
             },
 
             /* jc offset */
@@ -302,6 +321,7 @@ pub trait Isa: Mem + Reg {
                 let offset = self.load_pc();
                 debug!("jc 0x{:02X}", offset);
                 if self.load(self.psw()) & (1 << 7) != 0 {
+                    //TODO: value debug
                     self.reljmp(offset as i8);
                 }
             },
@@ -312,8 +332,10 @@ pub trait Isa: Mem + Reg {
                 debug!("orl 0x{:02X}, a", address);
 
                 let value = self.load(self.a());
-                let reg = self.load(Addr::Reg(address));
-                self.store(Addr::Reg(address), reg | value);
+                let old = self.load(Addr::Reg(address));
+                let new = old | value;
+                self.store(Addr::Reg(address), new);
+                debug!(" ; 0x{:02X} |= 0x{:02X} => 0x{:02X}", old, value, new);
             },
 
             /* orl address, #data */
@@ -322,8 +344,10 @@ pub trait Isa: Mem + Reg {
                 let value = self.load_pc();
                 debug!("orl 0x{:02X}, #0x{:02X}", address, value);
 
-                let reg = self.load(Addr::Reg(address));
-                self.store(Addr::Reg(address), reg | value);
+                let old = self.load(Addr::Reg(address));
+                let new = old | value;
+                self.store(Addr::Reg(address), new);
+                debug!(" ; 0x{:02X} |= 0x{:02X} => 0x{:02X}", old, value, new);
             },
 
             /* orl a, operand */
@@ -338,8 +362,10 @@ pub trait Isa: Mem + Reg {
                     self.load(operand)
                 };
 
-                let a = self.load(self.a());
-                self.store(self.a(), a | value);
+                let old = self.load(self.a());
+                let new = old | value;
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} |= 0x{:02X} => 0x{:02X}", old, value, new);
             },
 
             /* jnc offset */
@@ -347,6 +373,7 @@ pub trait Isa: Mem + Reg {
                 let offset = self.load_pc();
                 debug!("jnc 0x{:02X}", offset);
                 if self.load(self.psw()) & (1 << 7) == 0 {
+                    //TODO: value debug
                     self.reljmp(offset as i8);
                 }
             },
@@ -357,8 +384,10 @@ pub trait Isa: Mem + Reg {
                 debug!("anl 0x{:02X}, a", address);
 
                 let value = self.load(self.a());
-                let reg = self.load(Addr::Reg(address));
-                self.store(Addr::Reg(address), reg & value);
+                let old = self.load(Addr::Reg(address));
+                let new = old & value;
+                self.store(Addr::Reg(address), new);
+                debug!(" ; 0x{:02X} &= 0x{:02X} => 0x{:02X}", old, value, new);
             },
 
             /* anl address, #data */
@@ -367,8 +396,10 @@ pub trait Isa: Mem + Reg {
                 let value = self.load_pc();
                 debug!("anl 0x{:02X}, #0x{:02X}", address, value);
 
-                let reg = self.load(Addr::Reg(address));
-                self.store(Addr::Reg(address), reg & value);
+                let old = self.load(Addr::Reg(address));
+                let new = old & value;
+                self.store(Addr::Reg(address), new);
+                debug!(" ; 0x{:02X} &= 0x{:02X} => 0x{:02X}", old, value, new);
             }
 
             /* anl a, operand */
@@ -383,8 +414,10 @@ pub trait Isa: Mem + Reg {
                     self.load(operand)
                 };
 
-                let a = self.load(self.a());
-                self.store(self.a(), a & value);
+                let old = self.load(self.a());
+                let new = old & value;
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} &= 0x{:02X} => 0x{:02X}", old, value, new);
             },
 
             /* jz offset */
@@ -392,6 +425,7 @@ pub trait Isa: Mem + Reg {
                 let offset = self.load_pc();
                 debug!("jz 0x{:02X}", offset);
                 if self.load(self.a()) == 0 {
+                    //TODO: value debug
                     self.reljmp(offset as i8);
                 }
             },
@@ -408,8 +442,10 @@ pub trait Isa: Mem + Reg {
                     self.load(operand)
                 };
 
-                let a = self.load(self.a());
-                self.store(self.a(), a ^ value);
+                let old = self.load(self.a());
+                let new = old ^ value;
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} ^= 0x{:02X} => 0x{:02X}", old, value, new);
             },
 
             /* jnz offset */
@@ -417,6 +453,7 @@ pub trait Isa: Mem + Reg {
                 let offset = self.load_pc();
                 debug!("jnz 0x{:02X}", offset);
                 if self.load(self.a()) != 0 {
+                    //TODO: value debug
                     self.reljmp(offset as i8);
                 }
             },
@@ -454,6 +491,7 @@ pub trait Isa: Mem + Reg {
                 debug!("mov 0x{:02X}, 0x{:02X}", dest, src);
                 let value = self.load(Addr::Reg(src));
                 self.store(Addr::Reg(dest), value);
+                debug!(" ; 0x{:02X}", value);
             },
 
             /* mov address, operand */
@@ -463,6 +501,7 @@ pub trait Isa: Mem + Reg {
                 let operand = self.operand(op);
                 let value = self.load(operand);
                 self.store(Addr::Reg(address), value);
+                debug!(" ; 0x{:02X}", value);
             },
 
             /* mov dptr, address */
@@ -478,23 +517,26 @@ pub trait Isa: Mem + Reg {
                 let bit = self.load_pc();
                 debug!("mov 0x{:02X}, c", bit);
                 let (address, mask) = self.bit(bit);
-                let value = self.load(address);
-                if self.load(self.psw()) & (1 << 7) == 0 {
-                    self.store(address, value & !mask);
+                let old = self.load(address);
+                let new = if self.load(self.psw()) & (1 << 7) == 0 {
+                    old & !mask
                 } else {
-                    self.store(address, value | mask);
-                }
+                    old | mask
+                };
+                self.store(address, new);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* movc a, @a+dptr */
             0x93 => {
                 debug!("movc a, @a+dptr");
-                let address = Addr::PMem((
+                let address = (
                     (self.load(self.dptr(false)) as u16) |
                     (self.load(self.dptr(true)) as u16) << 8
-                ).wrapping_add(self.load(self.a()) as u16));
-                let value = self.load(address);
+                ).wrapping_add(self.load(self.a()) as u16);
+                let value = self.load(Addr::PMem(address));
                 self.store(self.a(), value);
+                debug!(" ; 0x{:04X}: 0x{:02X}", address, value);
             },
 
             /* sub a, operand */
@@ -513,18 +555,20 @@ pub trait Isa: Mem + Reg {
                     value += 1;
                 }
 
-                let a = self.load(self.a()) as i16;
+                let old = self.load(self.a()) as i16;
 
                 // Set carry if value being subtracted is greater than a
-                let carry = value > a;
+                let carry = value > old;
                 // Set auxiliary carry if low nibble of value being subtraced is greater than low nibble of a
-                let aux_carry = (value & 0xF) > (a & 0xF);
+                let aux_carry = (value & 0xF) > (old & 0xF);
                 // Set overflow flag if signed result is not within range
-                let signed = (a as i8) as i16 - (value as i8) as i16;
+                let signed = (old as i8) as i16 - (value as i8) as i16;
                 let overflow = signed > 127 || signed < -128;
                 self.update_psw(carry, aux_carry, overflow);
 
-                self.store(self.a(), (a - value) as u8);
+                let new = (old - value) as u8;
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} -= 0x{:02X} => 0x{:02X}", old, value, new);
             },
 
             /* inc dptr */
@@ -536,6 +580,7 @@ pub trait Isa: Mem + Reg {
                 ).wrapping_add(1);
                 self.store(self.dptr(false), value as u8);
                 self.store(self.dptr(true), (value >> 8) as u8);
+                debug!(" ; 0x{:04X}", value);
             },
 
             /* mul ab */
@@ -549,6 +594,7 @@ pub trait Isa: Mem + Reg {
 
                 self.store(self.a(), value as u8);
                 self.store(self.b(), (value >> 8) as u8);
+                debug!(" ; 0x{:02X} * 0x{:02X} => 0x{:04X}", a, b, value);
             },
 
             /* mov operand, address */
@@ -559,6 +605,7 @@ pub trait Isa: Mem + Reg {
                 debug!(", 0x{:02X}", address);
                 let value = self.load(Addr::Reg(address));
                 self.store(operand, value);
+                debug!(" ; 0x{:02X}", value);
             },
 
             /* cjne operand, #data, offset */
@@ -588,6 +635,7 @@ pub trait Isa: Mem + Reg {
                     psw &= !(1 << 7);
                 }
                 self.store(self.psw(), psw);
+                //TODO: value debug
                 if a != b {
                     self.reljmp(offset as i8);
                 }
@@ -599,6 +647,7 @@ pub trait Isa: Mem + Reg {
                 debug!("push 0x{:02X}", address);
                 let value = self.load(Addr::Reg(address));
                 self.push_sp(value);
+                debug!(" ; 0x{:02X}", value);
             },
 
             /* clr bit */
@@ -606,8 +655,10 @@ pub trait Isa: Mem + Reg {
                 let bit = self.load_pc();
                 debug!("clr 0x{:02X}", bit);
                 let (address, mask) = self.bit(bit);
-                let value = self.load(address);
-                self.store(address, value & !mask);
+                let old = self.load(address);
+                let new = old & !mask;
+                self.store(address, new);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* clr c */
@@ -620,22 +671,21 @@ pub trait Isa: Mem + Reg {
             /* swap a */
             0xC4 => {
                 debug!("swap a");
-                let value = self.load(self.a());
-                self.store(
-                    self.a(),
-                    (value >> 4) |
-                    (value & 0xF) << 4
-                );
+                let old = self.load(self.a());
+                let new = (old >> 4) | (old & 0xF) << 4;
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* xch a, operand */
             0xC5 ..= 0xCF => {
                 debug!("xch a,");
                 let operand = self.operand(op);
-                let a = self.load(self.a());
-                let value = self.load(operand);
-                self.store(self.a(), value);
-                self.store(operand, a);
+                let old = self.load(self.a());
+                let new = self.load(operand);
+                self.store(self.a(), new);
+                self.store(operand, old);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* pop address */
@@ -644,6 +694,7 @@ pub trait Isa: Mem + Reg {
                 debug!("pop 0x{:02X}", address);
                 let value = self.pop_sp();
                 self.store(Addr::Reg(address), value);
+                debug!(" ; 0x{:02X}", value);
             },
 
             /* setb bit */
@@ -651,8 +702,10 @@ pub trait Isa: Mem + Reg {
                 let bit = self.load_pc();
                 debug!("setb 0x{:02X}", bit);
                 let (address, mask) = self.bit(bit);
-                let value = self.load(address);
-                self.store(address, value | mask);
+                let old = self.load(address);
+                let new = old | mask;
+                self.store(address, new);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* setb c */
@@ -670,32 +723,35 @@ pub trait Isa: Mem + Reg {
                 debug!(", 0x{:02X}", offset);
                 let value = self.load(operand).wrapping_sub(1);
                 self.store(operand, value);
+                //TODO: value debug
                 if value != 0 {
                     self.reljmp(offset as i8);
                 }
             },
 
-            /* movx @dptr, a */
+            /* movx a, @dptr */
             0xE0 => {
                 debug!("movx a, @dptr");
-                let address = Addr::XRam(
+                let address = {
                     (self.load(self.dptr(false)) as u16) |
                     (self.load(self.dptr(true)) as u16) << 8
-                );
-                let value = self.load(address);
+                };
+                let value = self.load(Addr::XRam(address));
                 self.store(self.a(), value);
+                debug!(" ; 0x{:04X}: 0x{:02X}", address, value);
             },
 
-            /* movx @dptr, a */
+            /* movx a, rX */
             0xE2 ..= 0xE3 => {
                 let r = op - 0xE2;
                 debug!("movx a, @r{}", r);
-                let address = Addr::XRam(
+                let address = {
                     (self.load(self.r(r)) as u16) |
                     (self.load(self.p(2)) as u16) << 8
-                );
-                let value = self.load(address);
+                };
+                let value = self.load(Addr::XRam(address));
                 self.store(self.a(), value);
+                debug!(" ; 0x{:04X}: 0x{:02X}", address, value);
             },
 
             /* clr a */
@@ -710,36 +766,41 @@ pub trait Isa: Mem + Reg {
                 let operand = self.operand(op);
                 let value = self.load(operand);
                 self.store(self.a(), value);
+                debug!(" ; 0x{:02X}", value);
             },
 
             /* movx @dptr, a */
             0xF0 => {
                 debug!("movx @dptr, a");
-                let address = Addr::XRam(
+                let address = {
                     (self.load(self.dptr(false)) as u16) |
                     (self.load(self.dptr(true)) as u16) << 8
-                );
+                };
                 let value = self.load(self.a());
-                self.store(address, value);
+                self.store(Addr::XRam(address), value);
+                debug!(" ; 0x{:04X}: 0x{:02X}", address, value);
             },
 
             /* movx @r0, a */
             0xF2 ..= 0xF3 => {
                 let r = op - 0xF2;
                 debug!("movx @r{}, a",r );
-                let address = Addr::XRam(
+                let address = {
                     (self.load(self.r(r)) as u16) |
                     (self.load(self.p(2)) as u16) << 8
-                );
+                };
                 let value = self.load(self.a());
-                self.store(address, value);
+                self.store(Addr::XRam(address), value);
+                debug!(" ; 0x{:04X}: 0x{:02X}", address, value);
             },
 
             /* cpl a */
             0xF4 => {
                 debug!("cpl a");
-                let value = self.load(self.a());
-                self.store(self.a(), !value);
+                let old = self.load(self.a());
+                let new = !old;
+                self.store(self.a(), new);
+                debug!(" ; 0x{:02X} => 0x{:02X}", old, new);
             },
 
             /* mov operand, a */
@@ -749,6 +810,7 @@ pub trait Isa: Mem + Reg {
                 debug!(", a");
                 let value = self.load(self.a());
                 self.store(operand, value);
+                debug!(" ; 0x{:02X}", value);
             },
 
             /* unknown opcode */
