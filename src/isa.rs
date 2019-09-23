@@ -265,6 +265,17 @@ pub trait Isa: Mem + Reg {
                 }
             },
 
+            /* reti */
+            0x32 => {
+                //TODO: interrupt enable/disable flag
+                debug!("reti");
+                let pc = {
+                    (self.pop_sp() as u16) << 8 |
+                    (self.pop_sp() as u16)
+                };
+                self.set_pc(pc);
+            },
+
             /* rlc a */
             0x33 => {
                 debug!("rlc a");
