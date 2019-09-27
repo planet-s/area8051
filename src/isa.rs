@@ -441,6 +441,30 @@ pub trait Isa: Mem + Reg {
                 }
             },
 
+            /* xrl address, a */
+            0x62 => {
+                let address = self.load_pc();
+                debug!("xrl 0x{:02X}, a", address);
+
+                let value = self.load(self.a());
+                let old = self.load(Addr::Reg(address));
+                let new = old ^ value;
+                self.store(Addr::Reg(address), new);
+                debug!(" ; 0x{:02X} ^= 0x{:02X} => 0x{:02X}", old, value, new);
+            },
+
+            /* xrl address, #data */
+            0x63 => {
+                let address = self.load_pc();
+                let value = self.load_pc();
+                debug!("xrl 0x{:02X}, #0x{:02X}", address, value);
+
+                let old = self.load(Addr::Reg(address));
+                let new = old ^ value;
+                self.store(Addr::Reg(address), new);
+                debug!(" ; 0x{:02X} ^= 0x{:02X} => 0x{:02X}", old, value, new);
+            }
+
             /* xrl a, operand */
             0x64 ..= 0x6F => {
                 debug!("xrl a,");
