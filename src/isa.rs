@@ -99,6 +99,17 @@ pub trait Isa: Mem + Reg {
                 debug!("nop");
             },
 
+            /* ajmp address */
+            0x01 | 0x21 | 0x41 | 0x61 | 0x81 | 0xA1 | 0xC1 | 0xE1 => {
+                let address = {
+                    ((op >> 5) as u16) << 8 |
+                    (self.load_pc() as u16)
+                };
+                debug!("ajmp 0x{:04X}", address);
+                let pc = self.pc();
+                self.set_pc((pc & 0xF800) | address);
+            }
+
             /* ljmp address */
             0x02 => {
                 let address = {
