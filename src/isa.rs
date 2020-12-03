@@ -541,6 +541,16 @@ pub trait Isa: Mem + Reg {
                 self.reljmp(offset as i8);
             },
 
+            /* movc a, @a+pc */
+            0x83 => {
+                debug!("movc a, @a+pc");
+                let address = self.pc()
+                    .wrapping_add(self.load(self.a()) as u16);
+                let value = self.load(Addr::PMem(address));
+                self.store(self.a(), value);
+                debug!(" ; 0x{:04X}: 0x{:02X}", address, value);
+            },
+
             /* mov address, address */
             0x85 => {
                 let src = self.load_pc();
